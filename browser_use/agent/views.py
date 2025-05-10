@@ -34,6 +34,7 @@ REQUIRED_LLM_API_ENV_VARS = {
 	'ChatDeepSeek': ['DEEPSEEK_API_KEY'],
 	'ChatOllama': [],
 	'ChatGrok': ['GROK_API_KEY'],
+	'OpenRouter': ['OPENROUTER_API_KEY'],
 }
 
 

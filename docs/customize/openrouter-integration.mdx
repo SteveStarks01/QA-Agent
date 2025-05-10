@@ -1,0 +1,216 @@
+---
+title: "OpenRouter Integration"
+description: "How to use OpenRouter with Browser Use to access hundreds of AI models"
+icon: "router"
+---
+
+# Using OpenRouter with Browser Use
+
+[OpenRouter](https://openrouter.ai) is a unified API platform that provides access to hundreds of AI models from various providers through a single API. This integration allows you to easily use models from OpenAI, Anthropic, and many other providers with Browser Use.
+
+## Benefits of Using OpenRouter
+
+- **Access to multiple models**: Use models from OpenAI, Anthropic, Meta, Mistral, and many others through a single API
+- **Fallback routing**: Configure fallback models in case your primary model is unavailable
+- **Cost optimization**: Choose models based on price and performance
+- **Simplified API key management**: Use a single API key for all models
+
+## Getting Started
+
+### 1. Sign up for OpenRouter
+
+1. Visit [OpenRouter](https://openrouter.ai) and create an account
+2. Generate an API key from your dashboard
+
+### 2. Set up environment variables
+
+Add your OpenRouter API key to your `.env` file:
+
+```bash
+OPENROUTER_API_KEY=sk-or-your-api-key
+
+# Optional: Site information for OpenRouter analytics
+SITE_URL=https://your-site.com
+SITE_NAME=Your Site Name
+```
+
+### 3. Initialize the LLM with OpenRouter
+
+Use the `ChatOpenAI` class from LangChain with the OpenRouter base URL:
+
+```python
+from langchain_openai import ChatOpenAI
+from browser_use import Agent
+from pydantic import SecretStr
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
+
+# Get API key from environment
+api_key = os.getenv('OPENROUTER_API_KEY')
+if not api_key:
+    raise ValueError('OPENROUTER_API_KEY is not set')
+
+# Optional: Set site information for OpenRouter analytics
+site_url = os.getenv('SITE_URL', '')
+site_name = os.getenv('SITE_NAME', 'Browser Use')
+
+# Initialize the LLM with OpenRouter
+llm = ChatOpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=SecretStr(api_key),
+    model="openai/gpt-4o",  # Use any supported model ID
+    model_kwargs={
+        "headers": {
+            "HTTP-Referer": site_url,
+            "X-Title": site_name,
+        }
+    },
+)
+
+# Create the agent with the OpenRouter LLM
+agent = Agent(
+    task="Your task here",
+    llm=llm,
+    use_vision=True  # Set based on model capabilities
+)
+
+# Run the agent
+await agent.run()
+```
+
+## Available Models
+
+OpenRouter provides access to a wide range of models. Here are some popular ones:
+
+| Provider | Model ID | Vision Support |
+|----------|----------|---------------|
+| OpenAI | `openai/gpt-4o` | Yes |
+| OpenAI | `openai/gpt-4o-mini` | Yes |
+| Anthropic | `anthropic/claude-3-5-sonnet` | Yes |
+| Anthropic | `anthropic/claude-3-opus` | Yes |
+| Mistral | `mistralai/mistral-large` | No |
+| Meta | `meta/llama-3-70b-instruct` | No |
+| DeepSeek | `deepseek/deepseek-v3` | No |
+
+For a complete list of available models, visit the [OpenRouter models page](https://openrouter.ai/models).
+
+## Using Model Fallbacks
+
+OpenRouter allows you to specify fallback models in case your primary model is unavailable:
+
+```python
+llm = ChatOpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=SecretStr(api_key),
+    model="openai/gpt-4o",
+    model_kwargs={
+        "headers": {
+            "HTTP-Referer": site_url,
+            "X-Title": site_name,
+        },
+        "extra_body": {
+            "models": [
+                "openai/gpt-4o",
+                "anthropic/claude-3-5-sonnet",
+                "mistralai/mistral-large"
+            ]
+        }
+    },
+)
+```
+
+## Vision Support
+
+When using models with vision capabilities, make sure to set `use_vision=True` when creating the agent:
+
+```python
+agent = Agent(
+    task="Your task here",
+    llm=llm,
+    use_vision=True  # Enable for models with vision support
+)
+```
+
+For models without vision support, set `use_vision=False`.
+
+## Complete Example
+
+Here's a complete example that demonstrates how to use OpenRouter with Browser Use:
+
+```python
+import asyncio
+import os
+from typing import Optional
+
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from pydantic import SecretStr
+
+from browser_use import Agent
+
+# Load environment variables
+load_dotenv()
+
+# Get API key from environment
+api_key = os.getenv('OPENROUTER_API_KEY', '')
+if not api_key:
+    raise ValueError('OPENROUTER_API_KEY is not set')
+
+# Optional: Set site information for OpenRouter analytics
+site_url = os.getenv('SITE_URL', '')
+site_name = os.getenv('SITE_NAME', 'Browser Use Example')
+
+
+async def run_task(model_name: str = "openai/gpt-4o", use_vision: bool = True):
+    """
+    Run a browser automation task using an OpenRouter model.
+    
+    Args:
+        model_name: The OpenRouter model identifier
+        use_vision: Whether to enable vision capabilities
+    """
+    # Initialize the LLM with OpenRouter
+    llm = ChatOpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=SecretStr(api_key),
+        model=model_name,
+        model_kwargs={
+            "headers": {
+                "HTTP-Referer": site_url,
+                "X-Title": site_name,
+            }
+        },
+    )
+    
+    # Create the agent with the OpenRouter LLM
+    agent = Agent(
+        task="Go to example.com and return the title of the page",
+        llm=llm,
+        use_vision=use_vision,
+    )
+
+    # Run the agent
+    result = await agent.run()
+    return result
+
+
+async def main():
+    """Run examples with different OpenRouter models"""
+    
+    # Example 1: Using OpenAI's GPT-4o through OpenRouter
+    print("\n=== Running with OpenAI GPT-4o via OpenRouter ===")
+    await run_task(model_name="openai/gpt-4o")
+    
+    # Example 2: Using Anthropic's Claude model through OpenRouter
+    print("\n=== Running with Anthropic Claude via OpenRouter ===")
+    await run_task(model_name="anthropic/claude-3-5-sonnet", use_vision=True)
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
+```
+
+For more information about OpenRouter, visit the [OpenRouter documentation](https://openrouter.ai/docs).

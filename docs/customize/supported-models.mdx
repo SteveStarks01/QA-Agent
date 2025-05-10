@@ -283,6 +283,50 @@ Required environment variables:
 GROK_API_KEY=
 ```
 
+### OpenRouter
+[OpenRouter](https://openrouter.ai) is a unified API platform that provides access to hundreds of AI models from various providers through a single API. This allows you to easily switch between models from OpenAI, Anthropic, and many others.
+
+```python
+from langchain_openai import ChatOpenAI
+from browser_use import Agent
+from pydantic import SecretStr
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+api_key = os.getenv("OPENROUTER_API_KEY")
+
+# Initialize the model
+llm = ChatOpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    model="openai/gpt-4o",  # Use any supported model ID (e.g., "anthropic/claude-3-5-sonnet")
+    api_key=SecretStr(api_key),
+    model_kwargs={
+        "headers": {
+            "HTTP-Referer": os.getenv("SITE_URL", ""),  # Optional: for analytics
+            "X-Title": os.getenv("SITE_NAME", "Browser Use"),  # Optional: for analytics
+        }
+    },
+)
+
+# Create agent with the model
+agent = Agent(
+    task="Your task here",
+    llm=llm,
+    use_vision=True  # Set based on model capabilities
+)
+```
+
+Required environment variables:
+
+```bash .env
+OPENROUTER_API_KEY=
+
+# Optional: Site information for OpenRouter analytics
+SITE_URL=
+SITE_NAME=Browser Use
+```
+
 ## Coming soon
 (We are working on it)
 - Groq
